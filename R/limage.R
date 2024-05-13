@@ -1,12 +1,18 @@
 limage <- function( x
-                  , col = rainbow(4)
                   , order = NULL
-          				, show.remaining = FALSE
+                  , col = rainbow(4)
+                  , show.remaining = FALSE
+                  , col.remaining = "grey"
+                  , pch.na = 20
+                  , col.na = "lightgrey"
+          				, legend = length(col)
+          				, labels.x = rownames(x)
+          				, labels.y = colnames(x)
           				, cex.axis = 1
           				, cex.legend = 1
           				, cex.remaining = 1
           				, font = ""
-          				, asp = 1
+          				, asp = nrow(x)/ncol(x)
                   , method = "hamming"
                   , control = NULL
           				, plot = TRUE
@@ -19,46 +25,67 @@ limage <- function( x
   order.cols <- 1:ncol(x)
 
   if (!is.null(order)) {
-    sim.cols <- as.matrix(qlcMatrix::sim.obs(t(x), method = method))
-    sim.rows <- as.matrix(qlcMatrix::sim.obs(x, method = method))
+    if(nrow(x) > 1 & ncol(x) > 1) {
+      sim.cols <- qlcMatrix::sim.obs(t(x), method = method)
+      sim.rows <- qlcMatrix::sim.obs(x, method = method)
 
-    if (order == "pca") {
+      makeDist <- function(sim) {
+        sim <- as.matrix(sim)
+        max(sim, na.rm = TRUE) - sim
+      }
 
-      # PCA on similarities (aka "correspondence analysis")
-      # use second dimension for ordering
-      order.cols <- order(prcomp(sim.cols)$x[,2])
-      order.rows <- order(prcomp(sim.rows)$x[,2])
+      if (order == "eig") {
 
-    } else if (order == "varimax") {
+        # use eigenvalues as very efficiently calculated in RSPectra
+        # use first dimension for ordering
+        order.cols <- order(RSpectra::eigs(sim.cols,2)$vectors[,1])
+        order.rows <- order(RSpectra::eigs(sim.rows,2)$vectors[,1])
 
-      # varimax rotations on PCA for ordering of correspondences
-      # use second dimension
-      order.cols <- order(varimax(prcomp(sim.cols)$x)$loadings[,2])
-      order.rows <- order(varimax(prcomp(sim.rows)$x)$loadings[,2])
+      } else if (order == "pca") {
 
-    } else if (order == "mds") {
+        # PCA on similarities (aka "correspondence analysis")
+        # use second dimension for ordering
+        order.cols <- order(prcomp(as.matrix(sim.cols))$x[,2])
+        order.rows <- order(prcomp(as.matrix(sim.rows))$x[,2])
 
-      # classic MDS
-      # use first dimension for ordering
-      order.cols <- order(cmdscale(max(sim.cols)-sim.cols)[,1])
-      order.rows <- order(cmdscale(max(sim.rows)-sim.rows)[,1])
+      } else if (order == "varimax") {
 
+        # varimax rotations on PCA for ordering of correspondences
+        # use second dimension
+        order.cols <- order(varimax(prcomp(as.matrix(sim.cols))$x)$loadings[,2])
+        order.rows <- order(varimax(prcomp(as.matrix(sim.rows))$x)$loadings[,2])
+
+      } else if (order == "mds") {
+
+        # classic MDS
+        # use first dimension for ordering
+        order.cols <- order(cmdscale(makeDist(sim.cols))[,1])
+        order.rows <- order(cmdscale(makeDist(sim.rows))[,1])
+
+      } else {
+
+        # use library seriation for ordering
+        # option "R2E" works nice for getting groups of data
+        order.cols <- seriation::get_order(seriation::seriate(
+                                as.dist(makeDist(sim.cols))
+                                , method = order
+                                , control =  control
+                              ))
+        order.rows <- seriation::get_order(seriation::seriate(
+                                as.dist(makeDist(sim.rows))
+                                , method = order
+                                , control = control
+                              ))
+      }
     } else {
-
-      # use library seriation for ordering
-      # option "R2E" works nice for getting groups of data
-      order.cols <- seriation::get_order(seriation::seriate(
-                              as.dist(max(sim.cols)-sim.cols)
-                              , method = order
-                              , control =  control
-                            ))
-      order.rows <- seriation::get_order(seriation::seriate(
-                              as.dist(max(sim.rows)-sim.rows)
-                              , method = order
-                              , control = control
-                            ))
+      if (nrow(x) == 1) {
+        order.cols <- order(x[1,])
+      }
+      if (ncol(x) == 1) {
+        order.rows <- order(x[,1])
+      }
     }
-    x <- x[order.rows, order.cols]
+    x <- x[order.rows, order.cols, drop = FALSE]
   }
 
   if (plot) {
@@ -66,9 +93,10 @@ limage <- function( x
 	# === plotting windows ===
 
 	plot.new()
-  op <- par(family = font, mar = c(5,4,4,4) + 0.1)
-	plot.window(xlim=c(0,dim(x)[1])
-			       , ylim=c(0,dim(x)[2])
+  oldpar <- par(family = font, mar = c(5,4,4,4) + 0.1)
+  on.exit(par(oldpar))
+	plot.window(xlim = c(0, dim(x)[1])
+			       , ylim = c(0, dim(x)[2])
 			       , asp = asp
 			      	)
 
@@ -77,40 +105,32 @@ limage <- function( x
 	rect(-0.1, -0.1, nrow(x)+0.1, ncol(x)+0.1)
 	axis(1
 		, at = c(1:dim(x)[1]) - 0.5
-		, labels = rownames(x)
+		, labels = labels.x
 		, tick = FALSE
 		, las = 2
 		, cex.axis = cex.axis
-		, mgp = c(3,0,0)
+		, mgp = c(3,0.3,0)
 		, pos = - 0.5
 		)
 	axis(2
 		, at = c(1:dim(x)[2]) - 0.5
-		, labels = colnames(x)
+		, labels = labels.y
 		, tick = FALSE
 		, las = 2
 		, cex.axis = cex.axis
-		, mgp = c(3,0,0)
+		, mgp = c(3,0.3,0)
 		, pos = - 0.5
 		)
 
-	# === show missing data	===
-
-	points(which(is.na(x), arr.ind = T) - 0.5
-			, pch = 20
-			, col = "grey"
-			, cex = cex.remaining
-			)
-
 	# === selecting levels to plot ===
 
-	all <- names(sort(table(as.vector(x)),decreasing = T))
-
 	if (is.list(col)) {
-		levs <- names(col)
-		col <- unlist(col)
+	  col <- unlist(col)
+	}
+  if (!is.null(names(col))) {
+	  levs <- names(col)
 	} else {
-		levs <- all
+		levs <- names(sort(table(as.vector(x)), decreasing = T))
 		if (length(levs) > length(col)) {
 			levs <- levs[1:length(col)]
 		} else {
@@ -119,8 +139,23 @@ limage <- function( x
 		names(col) <- levs
 	}
 
+	# === show missing data	===
+
+	if (is.numeric(pch.na)) {
+	  points(which(is.na(x), arr.ind = T) - 0.5
+	         , pch = pch.na
+	         , col = col.na
+	         , cex = cex.remaining
+	  )
+	} else if (is.null(pch.na)) {
+    x[is.na(x)] <- "NA"
+    levs <- c(levs, "NA")
+    col <- c(col, col.na)
+    names(col) <- levs
+	}
+
 	# === plot boxes ===
-	# trick from http://stackoverflow.com/questions/15627674/
+	# trick from https://stackoverflow.com/questions/15627674/
 
 	cuts <- function(x) {
 	  n <- length(x) %/% 4
@@ -134,9 +169,9 @@ limage <- function( x
 
     # undocumented special coloring
     # should be removed at some point
-		if (i == "-"){
-			col[i] = "lightgrey"
-		}
+		# if (i == "-"){
+		# 	col[i] = "lightgrey"
+		# }
 
 		todo <- which(x == i, arr.ind=T)
 		todoX <- cbind(todo[,1]-1, todo[,1]-1, todo[,1], todo[,1])
@@ -151,6 +186,7 @@ limage <- function( x
 	# === add names of rare levels ===
 
 	if (show.remaining) {
+	  all <- names(table(x))
 		remaining <- all[is.na(match(all,levs))]
 		for (i in remaining) {
 			todo <- which(x == i, arr.ind = T)
@@ -160,29 +196,36 @@ limage <- function( x
 				, col = "grey"
 				)
 		}
-		col.remaining = "grey"
 		pch.remaining = 4
 	} else {
-		col.remaining = "white"
 		pch.remaining = 0
 	}
 
 	# === add legend ===
 
-	legend(x = dim(x)[1] + 0.2
-		 , y = dim(x)[2] + 0.2
-		 , legend = c(levs, "other", "NA")
-		 , xpd = TRUE
-		 , pch = c(rep(15, times =  length(levs)), pch.remaining, 20)
-		 , col = c(col, col.remaining, "grey")
-		 , bty = "n"
-		 , cex = cex.legend
-		 , ncol = 1
-		 )
+	if (!is.null(legend)) {
+
+	  if (is.numeric(legend)) {
+	    shown <- c(levs[1:legend])
+	  } else {
+	    shown <- levs[legend]
+	  }
+
+  	legend(x = dim(x)[1] + 0.2
+  		 , y = dim(x)[2] + 0.2
+  		 , legend = shown
+  		 , xpd = TRUE
+  		 , pch = c(rep(15, times = length(shown)))
+  		 , col = c(col)
+  		 , bty = "n"
+  		 , cex = cex.legend
+  		 , ncol = 1
+  		 )
+	}
 
 	# === return to default par settings ===
 
-	par(op)
+	par(oldpar)
 
 	# === return ordering invisibly ===
 

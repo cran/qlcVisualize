@@ -14,9 +14,10 @@ Isoglosses show lines surrounding similar phenomena in space. Instead of drawing
 \usage{
 lmap(points, data,
    main = NULL, draw = 5, levels = c(0.41, 0.46, 0.51),
-   labels = NULL, cex = 0.7, col = "rainbow", add = FALSE, lambda = NA,
-   legend = TRUE, position = "bottomleft", cex.legend = 0.7, font = "",
-   note = TRUE, file.out = NULL, ...)
+   labels = NULL, cex = 0.7, col = "rainbow", add = FALSE,
+   ignore.others = FALSE, normalize.frequency = FALSE, scale.pies = FALSE,
+   lambda = NA, legend = TRUE, position = "bottomleft", cex.legend = 0.7,
+   font = "", note = TRUE, file.out = NULL, ...)
 }
 \arguments{
   \item{points}{
@@ -35,7 +36,7 @@ lmap(points, data,
   height of contours to be drawn. Internally, all values are normalized between zero and one, so only values between those extremes are sensible. Line thickness is automatically balanced.
 }
   \item{labels}{
-  Optionally, labels for the points to be drawn instead of symbols in the plot.
+  Optionally, character vector with labels for the points, to be drawn instead of symbols in the plot. Should be a vector of the same length as the number of points. Alternatively, a single character-string is repeated for all points.
 }
   \item{cex}{
   Character expansion of the labels (see previous option). Also influences the size of symbols or pie-charts.
@@ -45,8 +46,17 @@ lmap(points, data,
 }
   \item{add}{
   Logical: should the plot be added to an exitings plot or not?
-  }
-  \item{lambda}{
+}
+  \item{ignore.others}{
+  Logical: ignore all other categories, not selected through \code{draw}.
+}
+  \item{normalize.frequency}{
+  Logical: should rows of data (points in the plot) be normalized to 1? Usefull only for data that represent frequency of occurence as columns. Note that setting this to \code{FALSE} influences the behaviour of \code{levels}.
+}
+\item{scale.pies}{
+  logical: for multivalued data: should the size of the pies represent frequencies (\code{TRUE}) or all be of the same size (\code{FALSE}, by default)?
+}
+\item{lambda}{
   Parameter for the interpolation, passed internally to the function \link[fields]{Krig}. Low values result in more detailed boundaries around the measured points.
 }
   \item{legend}{
@@ -92,11 +102,13 @@ boundary(hessen$villages, density = 0.1, grid = 10)
 
 # useful size of pies has to be determined by changing cex
 plot(hessen$boundary, main = NULL)
-lmap(hessen$villages, f4, draw = 3, cex = 0.8
-  , density = 0.1, grid = 10, add = TRUE, cex.legend = 0.5)
+lmap(hessen$villages, f4, draw = 3, cex = 0.8, normalize.frequency = TRUE
+  , density = 0.1, grid = 10, add = TRUE, cex.legend = 0.5, scale.pies = TRUE)
 
+\dontrun{
 # another isogloss example:
 # "f" sounds in German dialects in the words "Kochlöffel"
+# might give Unicode-errors because of phonetic symbols
 require(mapdata)
 map("worldHires", "Germany", fill = TRUE, col = "grey90")
 
@@ -104,6 +116,7 @@ data(dialects)
 lmap(dialects$villages, dialects$data[,21], levels = c(0.20, 0.22, 0.24)
     , add = TRUE, position = "topleft")
 title(main = "f-sound in \'Kochlöffel\'")
+}
 
 # semantic map example
 # location of points via multidimensional scaling of complete data
@@ -118,23 +131,25 @@ boundary(p, density = 0.004, box = 0.15, tightness = 8)
 # labels to be plotted instead of points
 text <- gsub("\\\.", "\n", rownames(haspelmath))
 
-# show a few languages
+# show a few languages for Haspelmaths indefinite data
 # using a quick dummy function to set all parameters
-tmp <- function(columns) {
+indef <- function(columns) {
   lmap(p, haspelmath[,columns]
     , levels = 0.1, labels = text
     , density = 0.004, box = 0.15, tightness = 8
     , lambda = 0.1, note = FALSE)
 }
 
-\dontrun{
+oldpar <- par("mfcol")
 par(mfcol = c(2,3))
-tmp(1:3)
-tmp(4:6)
-tmp(7:9)
-tmp(10:12)
-tmp(13:17)
-tmp(18:22)
-par(mfcol = c(1,1))}
+
+indef(1:3)
+indef(4:6)
+indef(7:9)
+indef(10:12)
+indef(13:17)
+indef(18:22)
+
+par(mfcol = oldpar)
 
 }

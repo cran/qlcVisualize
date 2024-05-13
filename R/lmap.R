@@ -6,6 +6,10 @@ lmap <- function( points, data
             , cex = 0.7
 						, col = "rainbow"
 						, add = FALSE
+				# data handling
+						, ignore.others = FALSE
+				    , normalize.frequency = FALSE
+				    , scale.pies = FALSE
         # smoothing paramater for Krig
             , lambda = NA
         # parameters for legend
@@ -50,14 +54,6 @@ lmap <- function( points, data
   ignore <- rowSums(data, na.rm = TRUE) == 0
   empty.points.present <- sum(ignore) > 0
 
-  # normalize between 0 and 1: each point (row) adds up to 1
-  sums <- rowSums(data, na.rm = TRUE)
-  sums[sums == 0] <- 1
-  data <- data/sums
-
-  # check for multi-valued data
-  single.valued.data <- sum(data[data != 1 & data != 0], na.rm = TRUE) == 0
-
   # =================================
   # which words to include in graphic
   # =================================
@@ -66,7 +62,7 @@ lmap <- function( points, data
     # only most frequent levels are included
     freq <- colSums(data, na.rm = TRUE)
     ordered <- order(freq, decreasing = TRUE, na.last = NA)
-    selection <- na.omit(ordered[1:draw])
+    selection <- na.omit(ordered[1:min(draw, ncol(data))])
   } else if (is.numeric(draw)) {
     # use numbers as column-numbers
     selection <- draw
@@ -84,6 +80,15 @@ lmap <- function( points, data
   } else {
     data <- data[ , selection, drop = FALSE]
   }
+
+  # optionally ignore all others
+  if (ignore.others & others.present) {
+    data <- data[, -which(colnames(data) == "other"), drop = FALSE]
+  }
+
+  # check whether there is multi-valued data
+  multi.valued <- apply(data,1,function(x){sum(x>0)>1})
+  single.valued.data <- sum(multi.valued, na.rm = TRUE) == 0
 
   # ===========
   # set colours
@@ -161,10 +166,20 @@ lmap <- function( points, data
   # using package "fields"
 	# =============
 
+  # for data representing relative frequencies
+  # normalize heights between 0 and 1: each point (row) adds up to 1
+  if (normalize.frequency) {
+    sums <- rowSums(data, na.rm = TRUE)
+    sums[sums == 0] <- 1
+    heights <- data/sums
+  } else {
+    heights <- data
+  }
+
 	for (i in 1:length(selection)) {
 
 	  # determine height
-	  h <- data[,i]
+	  h <- heights[,i]
 	  h0 <- rep.int(0, times = nrow(zeros))
 
 	  # make countours
@@ -188,8 +203,9 @@ lmap <- function( points, data
 	# ==========
 
 	if (legend) {
-	  par(family = font)
-	  if (single.valued.data & is.null(labels)) {
+	  oldpar <- par(family = font)
+	  on.exit(par(oldpar))
+	  if (sum(!multi.valued, na.rm = TRUE) > 0 & is.null(labels)) {
 
 	    pch <- 1:length(selection)
 	    if (others.present) { pch <- c(pch, 0) }
@@ -207,7 +223,7 @@ lmap <- function( points, data
 	            , cex = cex.legend
 	    )
 	  }
-	  par(family = "")
+	  par(oldpar)
 	}
 
   # =====================
@@ -238,32 +254,49 @@ lmap <- function( points, data
             , cex = cex
           )
 
-    if (single.valued.data) {
-      # plotting symbols if maximally one symbol per point
+    if (!single.valued.data) {
+
+      # plot pies for multi-valued points. This implementation is slow!!!
+      if (scale.pies) {
+        # make all pieas
+        sel <- !ignore
+      } else {
+        # only make pies for multivalued
+        sel <- !ignore & multi.valued
+      }
+      mapplots::draw.pie( x = points[sel,1, drop = FALSE]
+                          , y = points[sel,2, drop = FALSE]
+                          , z = data[sel,,drop = FALSE]
+                          , radius = cex/20
+                          , scale = scale.pies
+                          , col = col
+      )
+
+    }
+
+    # plotting symbols if maximally one symbol per point, others first
+    # only when not all pies!
+    if (!scale.pies) {
+      if (ncol(data)>length(selection)) {
+        points( points[data[, length(selection)+1] > 0 & !multi.valued, , drop = FALSE]
+                , pch = 0
+                , cex = cex
+                , col = col[length(selection)+1])
+      }
       for (i in 1:length(selection)) {
-        points( points[data[,i] > 0, , drop = FALSE]
+        points( points[data[, i] > 0 & !multi.valued, , drop = FALSE]
                 , pch = i
                 , cex = cex
                 , col = col[i]
                )
       }
-      if (ncol(data)>length(selection)) {
-        points( points[data[,length(selection)+1] > 0, , drop = FALSE]
-                , pch = 0
-                , cex = cex
-                , col = col[length(selection)+1])
-      }
-    } else {
-      # otherwise plot pies. This implementation is slow!!!
-      mapplots::draw.pie( x = points[!ignore,1]
-                          , y = points[!ignore,2]
-                          , z = data[!ignore,]
-                          , radius = cex/20
-                          , col = col
-                          )
     }
   } else {
     # plot labels
+
+    if (length(labels) == 1) {
+      labels <- rep(labels, times = nrow(points))
+    }
 
     if (length(labels) != nrow(points)) {
       stop("Number of labels is not equal to the number of points")
@@ -271,13 +304,14 @@ lmap <- function( points, data
     bw <- rep("black", times = nrow(points))
     bw[ignore] <- "grey"
 
-    par(family = font)
+    oldpar <- par(family = font)
+    on.exit(par(oldpar))
     text( points
           , labels = labels
           , col = bw
           , cex = cex
     )
-    par(family = "")
+    par(oldpar)
 
   }
 
