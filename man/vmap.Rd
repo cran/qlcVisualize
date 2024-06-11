@@ -6,6 +6,8 @@
 Plotting a Voronoi-map ("v-map")
 }
 \description{
+These functions are deprecated: use \link{weightedMap} instead.
+
 A Voronoi-map (voronoi-tessellation, also known as dirichlet tessellation) is used in quantitative dialectology. This function is a convenience wrapper to easily produce dialect maps with voronoi tessellations. Also described here are a helper functions to produce the tessellation.
 }
 \usage{
@@ -44,7 +46,7 @@ Outer boundary for the Voronoi tessellation. Should be in the form of an \code{\
   }
 }
 \details{
-This code is almost completely based on functions from the \code{spatstat.geom} package. For convenience, first some geographical boundaries can easily be accessed and converted for use in \code{spatstat.geom}. Then a Voronoi tessellation can be made (based on the function \code{\link[spatstat.geom]{dirichlet}}, which in turn is based on \code{\link[deldir]{deldir}}). Finally, this tessalation can be plotted filled with different colours.
+This code is almost completely based on functions from the \code{spatstat.geom} package. For convenience, first some geographical boundaries can easily be accessed and converted for use in \code{spatstat.geom}. Then a Voronoi tessellation can be made (based on the function \code{\link[spatstat.geom]{dirichlet}}, which in turn is based on \code{deldir} from the package \code{deldir}). Finally, this tessalation can be plotted filled with different colours.
 
 Any legends have to be added manually by using \code{\link[graphics]{legend}}, see examples below.
 
@@ -58,6 +60,7 @@ The function \code{voronoi} returns a warning when points are attested that lie 
 Michael Cysouw <cysouw@mac.com>
 }
 \examples{
+\dontrun{
 # make a Voronoi tessellation for some villages in hessen
 data(hessen)
 plot(hessen$boundary)
@@ -86,5 +89,5 @@ legend("bottomright", legend = c("es mir", "mir es / other"),
 d <- dist(hessen$data, method = "canberra")
 cols <- heeringa(d)
 vmap(tessellation, col = cols, border = NA)
-
+}
 }

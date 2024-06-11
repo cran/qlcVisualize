@@ -5,6 +5,8 @@
 
 voronoi <- function(points, window) {
 
+  .Deprecated("weightedMap")
+
   p <- spatstat.geom::ppp(points[,1], points[,2], window = window)
   v <- spatstat.geom::dirichlet(p)
 
@@ -19,12 +21,35 @@ voronoi <- function(points, window) {
 	return(v)
 }
 
+# turn into sf object
+# sfGeom <- sf::st_as_sfc(tessellation)
+
+# add features
+# n <- rep(1, times = length(sfGeom))
+# sfDataFrame <- sf::st_sf(geometry = sfGeom, n = n)
+
+# make cartogram
+# carto <- cartogramR::cartogramR(sfDataFrame, count = "n")$cartogram
+
+# easy to colour, also set "border = NA" to remove borders
+# problem: very difficult to make outer border
+
+# sfDataFrame <- sf::st_sf(geometry = carto, n = n)
+# singel <- dyplr::summarise(sfDataFrame)
+# plot(carto)
+# plot(tmp, add = T, border = "red")
+
+# also : sf::st_union()
+# both work only with rather smooth boundaries after cartogram
+
 # ====================
 # plotting of a voronoi-map (v-map)
 # default plotting of tessellations in spatstat is not easy to use with colour filling
 # ====================
 
 vmap <- function(tessellation, col = NULL, add = FALSE, outer.border = "black", border = "grey", lwd = 1, ...) {
+
+  .Deprecated("weightedMap")
 
 	if (!add) {
 		plot(0,0
