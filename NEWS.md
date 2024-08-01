@@ -1,3 +1,13 @@
+# qlcVisualize 0.4
+
+* complete rewrite of weightedMap
+* catch erratic and unexplicable failing of concaveman in weightedMap
+* use two rounds of cartogram to prevent errors with complex maps
+* added second round of voronoi in weightedMap to regularize result
+* adding a worldwide polygon that can be used as a window for all glottolog languages
+* adding function addContour in preparation for rewrite of levelMap
+* various bugfixes
+
 # qlcVisualize 0.3
 
 * completely rework vmap approach: new approach is weightedMap.
@@ -18,7 +28,7 @@
 * adding option 'ignore.others' in lmap
 * reorder plotting in lmap
 * allow for single row or column in limage
-* bigfixes in vmap and hullToOwin
+* bugfixes in vmap and hullToOwin
 
 # qlcVisualize 0.1.0
 

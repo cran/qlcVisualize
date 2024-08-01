@@ -38,13 +38,13 @@ Symbol to be used for NA elements. Use \code{NULL} for no symbol, but complete c
 Color to be used for NA elements.
   }
   \item{legend}{
-How many levels should be shown in the legend (in the order of frequency? Alternatively, provide a vector with names of the levels to be shown. Use \code{NULL} to supress the legend.
+How many levels should be shown in the legend (in the order of frequency? Alternatively, provide a vector with names of the levels to be shown. Use \code{NULL} to suppress the legend.
   }
   \item{labels.x}{
-Labels to be used on the x-axis. Defaults to rownames of the data. Use \code{NULL} to supress labels.
+Labels to be used on the x-axis. Defaults to rownames of the data. Use \code{NULL} to suppress labels.
   }
     \item{labels.y}{
-Labels to be used on the y-axis. Defaults to colnames of the data. Use \code{NULL} to supress labels.
+Labels to be used on the y-axis. Defaults to colnames of the data. Use \code{NULL} to suppress labels.
   }
   \item{cex.axis}{
 Size of the row and columns names of \code{x}, shown as axis labels.
@@ -59,7 +59,7 @@ Size of the text in the boxes. Only shown when \code{show.remaining = TRUE}.
 Font to be used in the plotting, can be necessary for unusual unicode symbols. Passed internally to \code{par(family)}.
 }
   \item{asp}{
-Aspect-ratio of the plotting of the boxes. By default the complete plot will be approximatly square. Use the value 1 for all square boxes. Manually resizing the boxes by changing the plotting window can be acheived by setting \code{asp = NA}.
+Aspect-ratio of the plotting of the boxes. By default the complete plot will be approximately square. Use the value 1 for all square boxes. Manually resizing the boxes by changing the plotting window can be achieved by setting \code{asp = NA}.
   }
   \item{method}{
 Method used to determine similarity, passed to \link[qlcMatrix]{sim.obs}, which is used internally to determine the order of rows and columns, using the method chosen in \code{order}.
@@ -74,7 +74,7 @@ By default, a plot is returned. When \code{FALSE}, nothing is plotted, but the r
 \details{
 There are many different orderings implemented: \code{"pca"} and \code{"varimax"} use the second dimension of \link{prcomp} and \link{varimax} respectively. \code{"eig"} will use the first eigenvector as computed by \link[RSpectra]{eigs}. This is really quick for large datasets. \code{"mds"} will use the first dimension of \link{cmdscale}.
 
-Further, all methods as provided in the function \link[seriation]{seriate} can be called. Specifcally, \code{"R2E"} and \code{"MDS_angle"} seem worthwhile to try out. Any paramters for these methods can be passed using the option \link{control}.
+Further, all methods as provided in the function \link[seriation]{seriate} can be called. Specifcally, \code{"R2E"} and \code{"MDS_angle"} seem worthwhile to try out. Any parameters for these methods can be passed using the option \code{control}.
 }
 \value{
 A plot is returned by default. When \code{plot = FALSE}, a list is returned with the reordering of the rows and the columns.
